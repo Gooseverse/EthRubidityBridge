@@ -4,7 +4,7 @@ Welcome to the Coinscription Bridge project! This repository contains a Dumb Con
 
 Author: Gooseverse.eth
 
-This is a concept and not working version. The uniswap addresses are not in the contract. When the Virtual Machine goes live this project will be closed and a fully functional cersion will be available. 
+This is a concept and not working version. The uniswap addresses are not in the contract. When the Virtual Machine goes live this project will be closed and a fully functional version will be available. 
 
 ## Dumb Contract
 
