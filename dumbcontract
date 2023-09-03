@@ -1,0 +1,49 @@
+class LiquidityPoolBridge < Contract
+  string :public, :owner
+  address :public, :uniswapRouterAddress
+  IUniswapV2Router02 :public, :uniswapRouter
+
+  constructor (_routerAddress: :address) do |c|
+    c.owner = msg.sender
+    c.uniswapRouterAddress = _routerAddress
+    c.uniswapRouter = IUniswapV2Router02(_routerAddress)
+  end
+
+  function :withdrawTokens, { _token: :address, _amount: :uint256 }, :external do |c|
+    require(c.owner == msg.sender, 'Only the owner can withdraw tokens')
+    IERC20 token = IERC20(c._token)
+    require(token.transfer(c.owner, c._amount), 'Token transfer failed')
+  end
+
+  function :swapAndProvideLiquidity, { _token: :address, _ethAmount: :uint256, _minTokens: :uint256 }, :external, :payable do |c|
+    require(msg.value == c._ethAmount, 'Incorrect ETH amount sent')
+    IERC20 token = IERC20(c._token)
+
+    # Swap ETH for tokens using Uniswap
+    path = [c.uniswapRouter.WETH(), token]
+
+    # Perform the swap
+    c.uniswapRouter.swapExactETHForTokens{value: msg.value}(0, path, c.self, block.timestamp)
+
+    # Approve Uniswap Router to spend tokens
+    tokenBalance = token.balanceOf(c.self)
+    require(token.approve(c.uniswapRouter, tokenBalance), 'Approval failed')
+
+    # Provide liquidity by adding tokens and ETH to the pool
+    c.uniswapRouter.addLiquidityETH{value: msg.value}(
+        token,
+        tokenBalance,
+        c._minTokens,
+        0,
+        c.self,
+        block.timestamp
+    )
+  end
+
+  function :withdrawLPTokens, { _token: :address }, :external do |c|
+    require(c.owner == msg.sender, 'Only the owner can withdraw LP tokens')
+    IERC20 token = IERC20(c._token)
+    lpTokenBalance = token.balanceOf(c.self)
+    require(token.transfer(c.owner, lpTokenBalance), 'LP token transfer failed')
+  end
+end
